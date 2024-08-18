@@ -25,3 +25,7 @@ ____
 > [!IMPORTANT]
 > This Swift package is currently in an early state and not ready to use.<br/>
 > This will change if v.1.0.0 will published.
+
+
+> [!NOTE]
+> This package uses semantic versioning.
