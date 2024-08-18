@@ -17,12 +17,14 @@ let package = Package(
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Swift-Hotfolder"),
+            name: "Swift-Hotfolder",
+            resources: [
+            ]),
 
         .testTarget(
             name: "Swift-HotfolderTests",
             dependencies: ["Swift-Hotfolder"],
             resources: [
-                .copy("Resources/watcher_config.json"),
+                .process("Resources"),
             ]),
     ])

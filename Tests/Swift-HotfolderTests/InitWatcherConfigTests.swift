@@ -14,8 +14,11 @@ final class InitWatcherConfigTests: XCTestCase {
     }
 
     func testInitWatcherConfigWithJsonFile() {
-        guard let pathToWatcherConfig = Bundle.main.path(forResource: "watcher_config", ofType: "json") else {
+        let bundle = Bundle.module
+
+        guard let pathToWatcherConfig = bundle.path(forResource: "watcher_config", ofType: "json") else {
             print("watcher_config.json not found")
+            XCTAssertNotNil(nil)
             return
         }
 
