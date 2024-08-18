@@ -70,7 +70,7 @@ jobs:
       with:
         auth: ${{ secrets.GIST_SECRET }}
         gistID: 51e5f621d066770394a2c02ed52e2205
-        filename: your-repo-name__${{ env.BRANCH }}.json
+        filename: Swift-Hotfolder__${{ env.BRANCH }}.json
         label: Test Coverage
         message: ${{ env.COVERAGE }}
         color: green
