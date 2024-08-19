@@ -7,7 +7,7 @@
     <img height="28" height="28" src="https://img.shields.io/github/actions/workflow/status/CodebyCR/Swift-Hotfolder/swift.yml" alt="Logo" />
     <img height="28" height="28" src="https://img.shields.io/github/stars/CodebyCR/Swift-Hotfolder.svg" alt="Logo" />
     <h6>
-      <em>A Framework to monitor your directories asyncronusly.</em>
+      <em>Monitor your directories asyncronusly.</em>
     </h6>
 </div>
 
