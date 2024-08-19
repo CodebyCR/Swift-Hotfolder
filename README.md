@@ -15,7 +15,7 @@
 
 > [!IMPORTANT]
 > This Swift package is currently in an early state and not ready to use.<br/>
-> This will change if v.1.0.0 will published.
+> This will change when v.1.0.0 is released.
 
 ### \#ConstributersWelcome❤️
 
