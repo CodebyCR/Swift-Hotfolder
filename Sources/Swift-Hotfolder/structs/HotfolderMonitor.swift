@@ -21,17 +21,19 @@ public enum HotfolderMonitor {
         await watcher.add(hotfolder: hotfolder2)
 
         // Start watching
-        let changes = await watcher.watch()
-
-        for await change in changes {
-            switch change {
-            case .created(let file):
-                print("Created:  '\(file.path)' in '\(file.hotfolderPath)'")
-            case .modified(let file):
-                print("Modified: '\(file.path)' in '\(file.hotfolderPath)'")
-            case .deleted(let file):
-                print("Deleted:  '\(file.path)' in '\(file.hotfolderPath)'")
+        do {
+            try await watcher.watch { change in
+                switch change {
+                case .created(let file):
+                    print("Created:  '\(file.path)' in '\(file.hotfolderPath)'")
+                case .modified(let file):
+                    print("Modified: '\(file.path)' in '\(file.hotfolderPath)'")
+                case .deleted(let file):
+                    print("Deleted:  '\(file.path)' in '\(file.hotfolderPath)'")
+                }
             }
+        } catch {
+            print("Error to: \(error)")
         }
 
         // Simulate adding a new hotfolder after a delay

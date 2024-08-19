@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum WatcherConfigError: Error {
+public enum WatcherConfigError: Error {
     case watcherIntervalToShort(String)
     case maxHotfolderCountToSmall(String)
     case jsonFileNotFound(String)

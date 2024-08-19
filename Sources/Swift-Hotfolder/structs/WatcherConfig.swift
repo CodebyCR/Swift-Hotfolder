@@ -25,7 +25,7 @@ public struct WatcherConfig: Codable {
         self.maxHotfolderCount = 5
     }
 
-    static let `default` = WatcherConfig()
+    public static let `default` = WatcherConfig()
 
     /// For maybe **unsafe** WatcherConfig created be the user of the framework.
     public init?(createNonExistingFolders: Bool, watchInterval: Double, maxHotfolderCount: UInt16) throws {
@@ -44,7 +44,7 @@ public struct WatcherConfig: Codable {
     }
 
     /// Try to read the given path to a config json file or return the 'default' WatcherConfig.
-    static func load(from configJsonPath: String = "") -> Result<WatcherConfig, Error> {
+    public static func load(from configJsonPath: String = "") -> Result<WatcherConfig, WatcherConfigError> {
         guard !configJsonPath.isEmpty else {
             print("Info: No 'configJsonPath' given. Using default configuration.")
             return .success(.default)

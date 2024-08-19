@@ -7,13 +7,13 @@
 
 import Foundation
 
-enum Change {
+public enum Change {
     case created(File)
     case modified(File)
     case deleted(File)
 
-    struct File {
-        let path: String
-        let hotfolderPath: String
+    public struct File {
+        public let path: String
+        public let hotfolderPath: String
     }
 }
