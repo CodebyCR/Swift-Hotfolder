@@ -21,3 +21,40 @@
 
 > [!NOTE]
 > This package uses semantic versioning.
+
+
+### Example Usage
+
+```Swift
+import Foundation
+import Swift_Hotfolder
+
+@main
+struct HotfolderApp {
+
+    static func main() async {
+        print("Welcome to Swift Hotfolder🔥")
+        let watcher = HotfolderWatcher()
+        let hotfolder = Hotfolder(path: "/Users/USER_NAME/Desktop/My_firts_Hotfolder")
+
+        await watcher.add(hotfolder: hotfolder)
+
+        // Start watching
+        do {
+            try await watcher.watch { change in
+                switch change {
+                case .created(let file):
+                    print("Created:  '\(file.path)' in '\(file.hotfolderPath)'")
+                case .modified(let file):
+                    print("Modified: '\(file.path)' in '\(file.hotfolderPath)'")
+                case .deleted(let file):
+                    print("Deleted:  '\(file.path)' in '\(file.hotfolderPath)'")
+                }
+            }
+        } catch {
+            print("Error in 'HotfolderWatcher.watch()': \(error)")
+        }
+    }
+
+}
+```
