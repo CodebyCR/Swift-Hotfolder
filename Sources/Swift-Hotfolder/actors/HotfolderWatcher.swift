@@ -16,6 +16,7 @@ public actor HotfolderWatcher {
         self.config = config
     }
 
+    @discardableResult
     public func add(hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
         guard hotfolders.count < config.maxHotfolderCount else {
             return .failure(HotfolderWatcherError.maxHotfolderCountReached("""
