@@ -7,14 +7,15 @@
 
 import Foundation
 
-public actor HotfolderWatcher {
+@globalActor
+public actor HotfolderWatcher: GlobalActor {
     private var hotfolders: Set<Hotfolder> = []
     private let fileManager = FileManager.default
-    private let config: WatcherConfig
+    private let config: WatcherConfig = .default
 
-    public init(config: consuming WatcherConfig = .default) {
-        self.config = config
-    }
+    private init() {}
+
+    public static let shared = HotfolderWatcher()
 
     @discardableResult
     public func add(hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
