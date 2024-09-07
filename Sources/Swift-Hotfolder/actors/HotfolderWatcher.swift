@@ -20,7 +20,7 @@ public actor HotfolderWatcher: GlobalActor {
     public static let shared = HotfolderWatcher()
 
     @discardableResult
-    public func add(_ hotfolder: Hotfolder) -> Result<Bool, Error> {
+    public func add(_ hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
         guard hotfolders.count < config.maxHotfolderCount else {
             return .failure(HotfolderWatcherError.maxHotfolderCountReached("Max hotfolder count reached"))
         }
