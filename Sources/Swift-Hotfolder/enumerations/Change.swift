@@ -8,12 +8,7 @@
 import Foundation
 
 public enum Change {
-    case created(File)
-    case modified(File)
-    case deleted(File)
-
-    public struct File {
-        public let path: String
-        public let hotfolderPath: String
-    }
+    case created(URL)
+    case modified(URL)
+    case deleted(URL)
 }
