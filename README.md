@@ -31,30 +31,36 @@ import Swift_Hotfolder
 
 @main
 struct HotfolderApp {
-
     static func main() async {
         print("Welcome to Swift Hotfolder🔥")
-        let watcher = HotfolderWatcher()
-        let hotfolder = Hotfolder(path: "/Users/USER_NAME/Desktop/My_firts_Hotfolder")
 
-        await watcher.add(hotfolder: hotfolder)
+        guard let hotfolderURL = URL(string: "/Users/USER_NAME/Desktop/My_firts_Hotfolder") else {
+            print("HotfolderURL can't be created")
+            return
+        }
+
+        let hotfolder = Hotfolder(at: hotfolderURL)
+
+        let modifyCancellable = hotfolder.modifySubject.sink { modifiedUrl in
+            print("Modified: \(modifiedUrl.path(percentEncoded: false))")
+        }
+
+        let deleteCancellable = hotfolder.deleteSubject.sink { deletedUrl in
+            print("Deleted: \(deletedUrl.path(percentEncoded: false))")
+        }
+
+        let createCancellable = hotfolder.createSubject.sink { createdUrl in
+            print("Created: \(createdUrl.path(percentEncoded: false))")
+        }
+
+        await HotfolderWatcher.shared.add(hotfolder)
 
         // Start watching
         do {
-            try await watcher.watch { change in
-                switch change {
-                case .created(let file):
-                    print("Created:  '\(file.path)' in '\(file.hotfolderPath)'")
-                case .modified(let file):
-                    print("Modified: '\(file.path)' in '\(file.hotfolderPath)'")
-                case .deleted(let file):
-                    print("Deleted:  '\(file.path)' in '\(file.hotfolderPath)'")
-                }
-            }
+            try await HotfolderWatcher.shared.startWatching()
         } catch {
-            print("Error in 'HotfolderWatcher.watch()': \(error)")
+            print("Error in 'HotfolderWatcher.startWatching': \(error)")
         }
     }
-
 }
 ```
