@@ -34,12 +34,10 @@ struct HotfolderApp {
     static func main() async {
         print("Welcome to Swift Hotfolder🔥")
 
-        guard let hotfolderURL = URL(string: "/Users/USER_NAME/Desktop/My_firts_Hotfolder") else {
-            print("HotfolderURL can't be created")
+        guard let hotfolder = Hotfolder(atPath: "/Users/USER_NAME/Desktop/My_firts_Hotfolder") else {
+            print("Hotfolder can't be created.")
             return
         }
-
-        let hotfolder = Hotfolder(at: hotfolderURL)
 
         let modifyCancellable = hotfolder.modifySubject.sink { modifiedUrl in
             print("Modified: \(modifiedUrl.path(percentEncoded: false))")
@@ -53,11 +51,12 @@ struct HotfolderApp {
             print("Created: \(createdUrl.path(percentEncoded: false))")
         }
 
-        await HotfolderWatcher.shared.add(hotfolder)
+        let watcher = HotfolderWatcher.shared
+        await watcher.add(hotfolder)
 
         // Start watching
         do {
-            try await HotfolderWatcher.shared.startWatching()
+            try await watcher.startWatching()
         } catch {
             print("Error in 'HotfolderWatcher.startWatching': \(error)")
         }
