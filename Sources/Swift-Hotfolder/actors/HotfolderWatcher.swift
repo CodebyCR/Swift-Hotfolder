@@ -9,7 +9,7 @@ import Combine
 import Foundation
 
 @globalActor
-public actor HotfolderWatcher: GlobalActor {
+final public actor HotfolderWatcher: GlobalActor {
     private var hotfolders: Set<Hotfolder> = []
     private let fileManager = FileManager.default
     private let config = WatcherConfig.default
@@ -20,7 +20,7 @@ public actor HotfolderWatcher: GlobalActor {
     public static let shared = HotfolderWatcher()
 
     @discardableResult
-    public func add(_ hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
+    final public func add(_ hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
         guard hotfolders.count < config.maxHotfolderCount else {
             return .failure(HotfolderWatcherError.maxHotfolderCountReached("Max hotfolder count reached"))
         }
@@ -37,7 +37,12 @@ public actor HotfolderWatcher: GlobalActor {
         return .success(inserted)
     }
 
-    public func startWatching() async throws {
+    /// removes a hotfolder by its URL
+    final public func remove(withURl hotfolderUrl: URL){
+        /// TODO: implement
+    }
+
+    final public func startWatching() async throws {
         var knownFiles: [Hotfolder: [String: Date]] = [:]
 
         while true {
@@ -53,7 +58,7 @@ public actor HotfolderWatcher: GlobalActor {
         }
     }
 
-    private func initializeKnownFiles(for hotfolder: Hotfolder) async throws -> [String: Date] {
+    final private func initializeKnownFiles(for hotfolder: Hotfolder) async throws -> [String: Date] {
         var knownFiles: [String: Date] = [:]
         let enumerator = fileManager.enumerator(atPath: hotfolder.path.path)
         while let filePath = enumerator?.nextObject() as? String {
@@ -67,11 +72,11 @@ public actor HotfolderWatcher: GlobalActor {
         return knownFiles
     }
 
-    private func getCurrentFiles(for hotfolder: Hotfolder) throws -> [String] {
+    final private func getCurrentFiles(for hotfolder: Hotfolder) throws -> [String] {
         return fileManager.enumerator(atPath: hotfolder.path.path)?.allObjects as? [String] ?? []
     }
 
-    private func checkForChanges(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
+    final private func checkForChanges(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
         for filePath in currentFiles {
             let fullPath = (hotfolder.path.path as NSString).appendingPathComponent(filePath)
             if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),
@@ -90,7 +95,7 @@ public actor HotfolderWatcher: GlobalActor {
         }
     }
 
-    private func checkForDeletions(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
+    final private func checkForDeletions(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
         for (filePath, _) in knownFiles {
             if !currentFiles.contains(filePath) {
                 knownFiles.removeValue(forKey: filePath)
@@ -98,4 +103,7 @@ public actor HotfolderWatcher: GlobalActor {
             }
         }
     }
+
+
+
 }
