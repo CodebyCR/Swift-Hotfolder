@@ -7,9 +7,19 @@
 
 import Foundation
 
-public enum WatcherConfigError: Error {
-    case watcherIntervalToShort(String)
-    case maxHotfolderCountToSmall(String)
+public enum WatcherConfigError: LocalizedError {
+    case watcherIntervalTooShort(String)
+    case maxHotfolderCountTooSmall(String)
     case jsonFileNotFound(String)
     case jsonParsingError(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .watcherIntervalTooShort(let message),
+             .maxHotfolderCountTooSmall(let message),
+             .jsonFileNotFound(let message),
+             .jsonParsingError(let message):
+            return message
+        }
+    }
 }
