@@ -9,18 +9,27 @@ import Combine
 import Foundation
 
 @globalActor
-final public actor HotfolderWatcher: GlobalActor {
+public final actor HotfolderWatcher: GlobalActor {
     private var hotfolders: Set<Hotfolder> = []
     private let fileManager = FileManager.default
     private let config = WatcherConfig.default
-    private var task: Task<Void, Error>?
+    public var count: Int {
+        hotfolders.count
+    }
 
     private init() {}
 
     public static let shared = HotfolderWatcher()
 
+    private var task: Task<Void, Never>? = nil
+    private var isRunning = false
+
+    public final func stop() {
+        // TODO: implement
+    }
+
     @discardableResult
-    final public func add(_ hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
+    public final func add(_ hotfolder: consuming Hotfolder) -> Result<Bool, Error> {
         guard hotfolders.count < config.maxHotfolderCount else {
             return .failure(HotfolderWatcherError.maxHotfolderCountReached("Max hotfolder count reached"))
         }
@@ -38,15 +47,23 @@ final public actor HotfolderWatcher: GlobalActor {
     }
 
     /// removes a hotfolder by its URL
-    final public func remove(withURl hotfolderUrl: URL){
-        /// TODO: implement
+    public final func remove(withURl hotfolderUrl: consuming URL) {
+        hotfolders.filter { $0.path == hotfolderUrl }
     }
 
-    final public func startWatching() async throws {
+    private final func checkForReleasableFiles(in knownFiles: inout [Hotfolder: [String: Date]]) async {
+        for hotfolder in hotfolders where !knownFiles.keys.contains(hotfolder) {
+            knownFiles.removeValue(forKey: hotfolder)
+        }
+    }
+
+    public final func startWatching() async throws {
         var knownFiles: [Hotfolder: [String: Date]] = [:]
 
         while true {
             try await Task.sleep(nanoseconds: UInt64(config.watchInterval * 1_000_000_000.0))
+            await checkForReleasableFiles(in: &knownFiles)
+
             for hotfolder in hotfolders {
                 if knownFiles[hotfolder] == nil {
                     knownFiles[hotfolder] = try await initializeKnownFiles(for: hotfolder)
@@ -58,7 +75,7 @@ final public actor HotfolderWatcher: GlobalActor {
         }
     }
 
-    final private func initializeKnownFiles(for hotfolder: Hotfolder) async throws -> [String: Date] {
+    private final func initializeKnownFiles(for hotfolder: Hotfolder) async throws -> [String: Date] {
         var knownFiles: [String: Date] = [:]
         let enumerator = fileManager.enumerator(atPath: hotfolder.path.path)
         while let filePath = enumerator?.nextObject() as? String {
@@ -72,11 +89,11 @@ final public actor HotfolderWatcher: GlobalActor {
         return knownFiles
     }
 
-    final private func getCurrentFiles(for hotfolder: Hotfolder) throws -> [String] {
+    private final func getCurrentFiles(for hotfolder: Hotfolder) throws -> [String] {
         return fileManager.enumerator(atPath: hotfolder.path.path)?.allObjects as? [String] ?? []
     }
 
-    final private func checkForChanges(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
+    private final func checkForChanges(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
         for filePath in currentFiles {
             let fullPath = (hotfolder.path.path as NSString).appendingPathComponent(filePath)
             if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),
@@ -95,7 +112,7 @@ final public actor HotfolderWatcher: GlobalActor {
         }
     }
 
-    final private func checkForDeletions(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
+    private final func checkForDeletions(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
         for (filePath, _) in knownFiles {
             if !currentFiles.contains(filePath) {
                 knownFiles.removeValue(forKey: filePath)
@@ -103,7 +120,4 @@ final public actor HotfolderWatcher: GlobalActor {
             }
         }
     }
-
-
-
 }
