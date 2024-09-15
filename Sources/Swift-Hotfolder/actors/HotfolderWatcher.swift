@@ -7,22 +7,33 @@
 
 import Combine
 import Foundation
+import os
 
 @globalActor
 public final actor HotfolderWatcher: GlobalActor {
-    private var hotfolders: Set<Hotfolder> = []
     private let fileManager = FileManager.default
     private let config = WatcherConfig.default
+    private let uptime: Date
+
+    private(set) var hotfolders: Set<Hotfolder> = []
+    private(set) var task: Task<Void, Never>? = nil
+    private(set) var isRunning: Bool
+
     public var count: Int {
         hotfolders.count
     }
 
-    private init() {}
-
     public static let shared = HotfolderWatcher()
 
-    private var task: Task<Void, Never>? = nil
-    private var isRunning = false
+    private init() {
+        isRunning = false
+        uptime = Date.now
+    }
+
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "hotfolder_logger",
+        category: String(describing: HotfolderWatcher.self)
+    )
 
     public final func stop() {
         // TODO: implement
