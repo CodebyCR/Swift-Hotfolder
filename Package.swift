@@ -18,7 +18,10 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Swift-Hotfolder",
-            resources: [
+            resources: [],
+            swiftSettings: [
+                .enableUpcomingFeature("SWIFT_UPCOMING_FEATURE_FORWARD_TRAILING_CLOSURES"),
+                .enableExperimentalFeature("StrictConcurrency=targeted", .when(platforms: [.macOS])),
             ]),
 
         .testTarget(
