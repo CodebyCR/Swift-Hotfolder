@@ -3,9 +3,9 @@ import Foundation
 
 public struct Hotfolder: Equatable, Hashable {
     // Properties
-    let path: URL
+    public let path: URL
 
-    var name: String? {
+    public var name: String? {
         return path.lastPathComponent
     }
 
