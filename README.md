@@ -60,6 +60,8 @@ struct HotfolderApp {
         } catch {
             print("Error in 'HotfolderWatcher.startWatching': \(error)")
         }
+        
+        try? await Task.sleep(for: .seconds(120))
     }
 }
 ```
