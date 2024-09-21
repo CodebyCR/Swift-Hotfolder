@@ -7,7 +7,18 @@
 
 import Foundation
 
-enum HotfolderWatcherError: Error {
+enum HotfolderWatcherError: LocalizedError {
     case hotfolderCantBeCreated(String)
     case maxHotfolderCountReached(String)
+    case hotfolderWatcherCurrentlyRun(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case
+            .hotfolderCantBeCreated(let message),
+            .maxHotfolderCountReached(let message),
+            .hotfolderWatcherCurrentlyRun(let message):
+            return message
+        }
+    }
 }
