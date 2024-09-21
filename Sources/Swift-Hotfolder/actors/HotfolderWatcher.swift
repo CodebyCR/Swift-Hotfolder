@@ -11,15 +11,20 @@ import os.log
 
 @globalActor
 public final actor HotfolderWatcher: GlobalActor {
-    private let fileManager = FileManager.default
-    private let config = WatcherConfig.default
-    private let uptime: Date
+    private let fileManager: FileManager
+    private var watcherConfig: WatcherConfig
+    private var runTime: Date?
 
-    private(set) var hotfolders: Set<Hotfolder> = []
-    private(set) var knownFiles: [Hotfolder: [String: Date]] = [:]
-    private var runLoopTask: Task<Void, Never>?
+    private(set) var hotfolders: Set<Hotfolder>
+    private(set) var knownFiles: [Hotfolder: [URL: Date]]
+    private var runLoopTask: Task<Void, Error>?
 
-    private(set) var isRunning: Bool
+    private(set) var isRunning: Bool {
+        didSet(watcherStarted) {
+            runTime = watcherStarted ? Date.now : nil
+            isRunning = watcherStarted
+        }
+    }
 
     public var count: Int {
         hotfolders.count
@@ -28,8 +33,21 @@ public final actor HotfolderWatcher: GlobalActor {
     public static let shared = HotfolderWatcher()
 
     private init() {
+        fileManager = FileManager.default
+        watcherConfig = WatcherConfig.default
         isRunning = false
-        uptime = Date.now
+        hotfolders = []
+        knownFiles = [:]
+    }
+
+    public func setup(_ watcherConfig: WatcherConfig) throws {
+        guard !isRunning else {
+            throw HotfolderWatcherError.hotfolderWatcherCurrentlyRun("""
+            HotfolderWatcher cannot be modified while it is running.
+            """)
+        }
+
+        self.watcherConfig = watcherConfig
     }
 
     private static let logger = Logger(
@@ -76,7 +94,7 @@ public final actor HotfolderWatcher: GlobalActor {
             do {
                 try await runBackgroundTask()
             } catch {
-                print(error.localizedDescription)
+                throw error
             }
         }
 
@@ -84,36 +102,20 @@ public final actor HotfolderWatcher: GlobalActor {
         return isRunning
     }
 
-    private func runBackgroundTask() async throws {
-        var knownFiles = self.knownFiles
-
-        while !Task.isCancelled {
-            try await Task.sleep(nanoseconds: UInt64(config.watchInterval * 1_000_000_000.0))
-//            Self.logger.log("\(#file) -> \(#function) Looking for changes...")
-
-            for hotfolder in hotfolders {
-                if knownFiles[hotfolder] == nil {
-                    knownFiles[hotfolder] = try await initializeKnownFiles(for: hotfolder)
-                }
-
-                let currentFiles = try getCurrentFiles(for: hotfolder)
-                try await checkForChanges(hotfolder: hotfolder, currentFiles: currentFiles, knownFiles: &knownFiles[hotfolder]!)
-                try await checkForDeletions(hotfolder: hotfolder, currentFiles: currentFiles, knownFiles: &knownFiles[hotfolder]!)
-            }
-        }
-    }
-
     @discardableResult
     public final func add(_ hotfolder: Hotfolder) -> Result<Bool, Error> {
-        guard hotfolders.count < config.maxHotfolderCount else {
+        guard hotfolders.count < watcherConfig.maxHotfolderCount else {
             return .failure(HotfolderWatcherError.maxHotfolderCountReached("Max hotfolder count reached"))
         }
 
-        if config.createNonExistingFolders, !fileManager.fileExists(atPath: hotfolder.path.path) {
+        if watcherConfig.createNonExistingFolders, !fileManager.fileExists(atPath: hotfolder.path.path) {
             do {
                 try fileManager.createDirectory(at: hotfolder.path, withIntermediateDirectories: true, attributes: nil)
+                #if DEBUG
+                    Self.logger.info("Hotfolder created")
+                #endif
             } catch {
-                return .failure(HotfolderWatcherError.hotfolderCantBeCreated("Hotfolder can't be created"))
+                return .failure(HotfolderWatcherError.hotfolderCantBeCreated("Hotfolder can't be created: \(error)"))
             }
         }
 
@@ -141,48 +143,67 @@ public final actor HotfolderWatcher: GlobalActor {
         }
     }
 
-    private final func initializeKnownFiles(for hotfolder: Hotfolder) async throws -> [String: Date] {
-        var knownFiles: [String: Date] = [:]
-        let enumerator = fileManager.enumerator(atPath: hotfolder.path.path)
-        while let filePath = enumerator?.nextObject() as? String {
-            let fullPath = (hotfolder.path.path as NSString).appendingPathComponent(filePath)
-            if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),
+    private func runBackgroundTask() async throws {
+        var knownFiles = self.knownFiles
+
+        while !Task.isCancelled {
+            try await Task.sleep(nanoseconds: UInt64(watcherConfig.watchInterval * 1_000_000_000.0))
+
+            for hotfolder in hotfolders {
+                if knownFiles[hotfolder] == nil {
+                    knownFiles[hotfolder] = try await initializeKnownFiles(for: hotfolder)
+                }
+
+                let currentFiles = try getCurrentFiles(for: hotfolder)
+                try await checkForChanges(hotfolder: hotfolder, currentFiles: currentFiles, knownFiles: &knownFiles[hotfolder]!)
+                try await checkForDeletions(hotfolder: hotfolder, currentFiles: currentFiles, knownFiles: &knownFiles[hotfolder]!)
+            }
+        }
+    }
+
+    private final func initializeKnownFiles(for hotfolder: Hotfolder) async throws -> [URL: Date] {
+        var knownFiles: [URL: Date] = [:]
+        let enumerator = fileManager.enumerator(at: hotfolder.path, includingPropertiesForKeys: nil, options: watcherConfig.enumerationOptions)
+
+        while let filePath = enumerator?.nextObject() as? URL {
+            if let attributes = try? fileManager.attributesOfItem(atPath: filePath.path),
                let modificationDate = attributes[.modificationDate] as? Date
             {
                 knownFiles[filePath] = modificationDate
             }
         }
+
         return knownFiles
     }
 
-    private final func getCurrentFiles(for hotfolder: Hotfolder) throws -> [String] {
-        return fileManager.enumerator(atPath: hotfolder.path.path)?.allObjects as? [String] ?? []
+    private final func getCurrentFiles(for hotfolder: Hotfolder) throws -> [URL] {
+        let dircetoryEnumerator = fileManager.enumerator(at: hotfolder.path, includingPropertiesForKeys: nil, options: watcherConfig.enumerationOptions)
+        return dircetoryEnumerator?.allObjects as? [URL] ?? []
     }
 
-    private final func checkForChanges(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
+    private final func checkForChanges(hotfolder: Hotfolder, currentFiles: [URL], knownFiles: inout [URL: Date]) async throws {
         for filePath in currentFiles {
-            let fullPath = (hotfolder.path.path as NSString).appendingPathComponent(filePath)
-            if let attributes = try? fileManager.attributesOfItem(atPath: fullPath),
+            if let attributes = try? fileManager.attributesOfItem(atPath: filePath.path),
                let modificationDate = attributes[.modificationDate] as? Date
             {
                 if let knownDate = knownFiles[filePath] {
                     if modificationDate != knownDate {
                         knownFiles[filePath] = modificationDate
-                        await hotfolder.modifySubject.send(URL(fileURLWithPath: fullPath))
+                        await hotfolder.modifySubject.send(filePath)
                     }
                 } else {
                     knownFiles[filePath] = modificationDate
-                    await hotfolder.createSubject.send(URL(fileURLWithPath: fullPath))
+                    await hotfolder.createSubject.send(filePath)
                 }
             }
         }
     }
 
-    private final func checkForDeletions(hotfolder: Hotfolder, currentFiles: [String], knownFiles: inout [String: Date]) async throws {
-        for (filePath, _) in knownFiles {
+    private final func checkForDeletions(hotfolder: Hotfolder, currentFiles: [URL], knownFiles: inout [URL: Date]) async throws {
+        for filePath in knownFiles.keys {
             if !currentFiles.contains(filePath) {
                 knownFiles.removeValue(forKey: filePath)
-                await hotfolder.deleteSubject.send(URL(fileURLWithPath: (hotfolder.path.path as NSString).appendingPathComponent(filePath)))
+                await hotfolder.deleteSubject.send(filePath)
             }
         }
     }
