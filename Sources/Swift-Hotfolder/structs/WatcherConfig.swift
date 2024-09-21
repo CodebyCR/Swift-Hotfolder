@@ -25,7 +25,7 @@ public struct WatcherConfig: Codable {
         self.createNonExistingFolders = true
         self.watchInterval = 1.0
         self.maxHotfolderCount = 5
-        self.enumerationOptions = []
+        self.enumerationOptions = [.skipsHiddenFiles]
     }
 
     public static let `default` = WatcherConfig()
