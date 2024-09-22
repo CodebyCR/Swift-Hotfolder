@@ -1,5 +1,6 @@
 {
   "create_non_existing_folders": true,
   "watch_interval": 1.0,
-  "max_hotfolder_count": 7
+  "max_hotfolder_count": 7,
+  "enumeration_options": []
 }
