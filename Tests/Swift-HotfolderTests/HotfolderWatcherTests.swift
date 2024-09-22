@@ -15,7 +15,11 @@ final class HotfolderWatcherTests: XCTestCase {
         // preapare
         let watcher: HotfolderWatcher = .shared
         await watcher.stop()
-        try? await watcher.setup(.default)
+        guard let config = try? WatcherConfig(watchInterval: 0.4) else {
+            print("Failed to create WatcherConfig")
+            return
+        }
+        try? await watcher.setup(config)
 
         var cancellables: Set<AnyCancellable>  = []
         let fileManager = FileManager.default
