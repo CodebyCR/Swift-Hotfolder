@@ -11,34 +11,64 @@ import Combine
 
 final class HotfolderWatcherTests: XCTestCase {
 
-    func testNonExistingHotfolderCreation() {
+    func testReceiveChangeEvent() async{
+        // preapare
         let watcher: HotfolderWatcher = .shared
-        let tempDir = FileManager.default.temporaryDirectory
-        let tempDirectory = tempDir.appendingPathComponent(UUID().uuidString)
+        await watcher.stop()
+        try? await watcher.setup(.default)
+
+        var cancellables: Set<AnyCancellable>  = []
+        let fileManager = FileManager.default
+        let tempDirectory = fileManager.homeDirectoryForCurrentUser
+            .appending(component: "Hotfolder_Test")
+            .appending(component: UUID().uuidString)
+
         let hotfolder = Hotfolder(at: tempDirectory)
+        let createExpectation = XCTestExpectation(description: "Create event received.")
+        let modifyExpectation = XCTestExpectation(description: "Modify event received.")
+        let deleteExpectation = XCTestExpectation(description: "Delete event received.")
 
+        hotfolder.modifySubject.sink { _ in
+            modifyExpectation.fulfill()
+            print("modified")
+        }.store(in: &cancellables)
 
-        // current
+        hotfolder.deleteSubject.sink { _ in
+            deleteExpectation.fulfill()
+            print("deleted")
+        }.store(in: &cancellables)
+
+        hotfolder.createSubject.sink { _ in
+            createExpectation.fulfill()
+            print("created")
+        }.store(in: &cancellables)
+
+        let testFile = hotfolder.path.appendingPathComponent("Test_File.txt")
+        print(testFile.path)
+
         Task {
-            let result = await watcher.add(hotfolder)
-
-            switch result {
-            case .success(let added):
-                XCTAssertTrue(added)
-            case .failure(let error):
-                print(error.localizedDescription)
-                XCTAssertNoThrow(error)
+            await watcher.add(hotfolder)
+            do {
+                try await watcher.startWatching()
+            } catch {
+                print(error)
             }
+            try? await Task.sleep(for: .seconds(2))
 
-            await watcher.stop()
+            print("create")
+            create(testFile)
+            try? await Task.sleep(for: .seconds(1))
+
+            print("modify")
+            modify(testFile)
+            try? await Task.sleep(for: .seconds(1))
+
+            print("delete")
+            delete(testFile)
+            try? await Task.sleep(for: .seconds(1))
         }
 
-        do {
-            try FileManager.default.removeItem(at: hotfolder.path)
-        } catch {
-            print(error.localizedDescription)
-            XCTAssertNoThrow(error)
-        }
+        wait(for: [createExpectation, modifyExpectation, deleteExpectation], timeout: 6.0)
     }
 
     func testMaxHotfolderOvershot() async {
@@ -80,64 +110,40 @@ final class HotfolderWatcherTests: XCTestCase {
             XCTAssertNotNil(error)
         }
 
-    }
-    
-    func testReceiveChangeEvent(){
-        // preapare
-        let watcher: HotfolderWatcher = .shared
-        var cancellables: Set<AnyCancellable>  = []
-        let fileManager = FileManager.default
-        let tempDirectory = fileManager.homeDirectoryForCurrentUser
-            .appending(component: "Hotfolder_Test")
-            .appending(component: UUID().uuidString)
-
-        let hotfolder = Hotfolder(at: tempDirectory)
-        let createExpectation = XCTestExpectation(description: "Create event received.")
-        let modifyExpectation = XCTestExpectation(description: "Modify event received.")
-        let deleteExpectation = XCTestExpectation(description: "Delete event received.")
-
-        hotfolder.modifySubject.sink { _ in
-            modifyExpectation.fulfill()
-            print("modified")
-        }.store(in: &cancellables)
-
-        hotfolder.deleteSubject.sink { _ in
-            deleteExpectation.fulfill()
-            print("deleted")
-        }.store(in: &cancellables)
-
-        hotfolder.createSubject.sink { _ in
-            createExpectation.fulfill()
-            print("created")
-        }.store(in: &cancellables)
-
-        let testFile = hotfolder.path.appendingPathComponent("Test_File.txt")
-        print(testFile.path)
-
         Task {
-            await watcher.add(hotfolder)
-            do {
-                try await watcher.startWatching()
-            } catch {
-                print(error)
-            }
-            try? await Task.sleep(for: .seconds(2))
-
-
-            print("create")
-            create(testFile)
-            try? await Task.sleep(for: .seconds(1))
-
-            print("modify")
-            modify(testFile)
-            try? await Task.sleep(for: .seconds(1))
-
-            print("delete")
-            delete(testFile)
-            try? await Task.sleep(for: .seconds(1))
+            await watcher.remove(hotfolder1)
         }
 
-        wait(for: [createExpectation, modifyExpectation, deleteExpectation], timeout: 6.0)
+    }
+
+    func testNonExistingHotfolderCreation() {
+        let watcher: HotfolderWatcher = .shared
+        let tempDir = FileManager.default.temporaryDirectory
+        let tempDirectory = tempDir.appendingPathComponent(UUID().uuidString)
+        let hotfolder = Hotfolder(at: tempDirectory)
+
+
+        // current
+        Task {
+            let result = await watcher.add(hotfolder)
+
+            switch result {
+            case .success(let added):
+                XCTAssertTrue(added)
+            case .failure(let error):
+                print(error.localizedDescription)
+                XCTAssertNoThrow(error)
+            }
+
+            await watcher.stop()
+        }
+
+        do {
+            try FileManager.default.removeItem(at: hotfolder.path)
+        } catch {
+            print(error.localizedDescription)
+            XCTAssertNoThrow(error)
+        }
     }
 
     // Helper Methods
