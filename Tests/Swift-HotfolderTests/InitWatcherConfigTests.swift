@@ -21,6 +21,7 @@ final class InitWatcherConfigTests: XCTestCase {
             XCTAssertNotNil(nil)
             return
         }
+        print(pathToWatcherConfig)
 
         let loadingResult = WatcherConfig.load(from: pathToWatcherConfig)
 

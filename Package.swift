@@ -28,6 +28,6 @@ let package = Package(
             name: "Swift-HotfolderTests",
             dependencies: ["Swift-Hotfolder"],
             resources: [
-                .process("Resources"),
+                .process("Resources/watcher_config.json"),
             ]),
     ])
