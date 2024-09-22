@@ -116,21 +116,13 @@ final class InitWatcherConfigTests: XCTestCase {
 
     func testToSmallWatcherIntervalAssert() {
         XCTAssertThrowsError(
-            try WatcherConfig(
-                createNonExistingFolders: false,
-                watchInterval: 0.01,
-                maxHotfolderCount: 260
-            )
+            try WatcherConfig(watchInterval: 0.01)
         )
     }
 
     func testToSmallHotfolderCountAssert() {
         XCTAssertThrowsError(
-            try WatcherConfig(
-                createNonExistingFolders: false,
-                watchInterval: 1.0,
-                maxHotfolderCount: 0
-            )
+            try WatcherConfig(maxHotfolderCount: 0)
         )
     }
 }

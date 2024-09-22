@@ -31,7 +31,7 @@ public struct WatcherConfig: Codable {
     public static let `default` = WatcherConfig()
 
     /// For maybe **unsafe** WatcherConfig created be the user of the framework.
-    public init?(createNonExistingFolders: Bool, watchInterval: Double, maxHotfolderCount: UInt16, enumerationOptions: FileManager.DirectoryEnumerationOptions = []) throws {
+    public init?(createNonExistingFolders: Bool = true, watchInterval: Double = 1.0, maxHotfolderCount: UInt16 = 5, enumerationOptions: FileManager.DirectoryEnumerationOptions = []) throws {
         let minWatcherInterval = 0.1
         guard watchInterval >= minWatcherInterval else {
             throw WatcherConfigError.watcherIntervalTooShort("Your watcherInterval is to short ( < 0.01). Set it up to avoid unexpeted overlabs.")
