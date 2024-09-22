@@ -12,7 +12,7 @@ import os.log
 @globalActor
 public final actor HotfolderWatcher: GlobalActor {
     private let fileManager: FileManager
-    private var watcherConfig: WatcherConfig
+    private(set) var watcherConfig: WatcherConfig
     private var runTime: Date?
 
     private(set) var hotfolders: Set<Hotfolder>
