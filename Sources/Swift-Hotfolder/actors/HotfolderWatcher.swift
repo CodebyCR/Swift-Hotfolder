@@ -145,9 +145,10 @@ public final actor HotfolderWatcher: GlobalActor {
 
     private func runBackgroundTask() async throws {
         var knownFiles = self.knownFiles
+        let watchInterval = UInt64(watcherConfig.watchInterval * 1_000_000_000.0)
 
         while !Task.isCancelled {
-            try await Task.sleep(nanoseconds: UInt64(watcherConfig.watchInterval * 1_000_000_000.0))
+            try await Task.sleep(nanoseconds: watchInterval)
 
             for hotfolder in hotfolders {
                 if knownFiles[hotfolder] == nil {
@@ -189,11 +190,11 @@ public final actor HotfolderWatcher: GlobalActor {
                 if let knownDate = knownFiles[filePath] {
                     if modificationDate != knownDate {
                         knownFiles[filePath] = modificationDate
-                        await hotfolder.modifySubject.send(filePath)
+                        hotfolder.modifySubject.send(filePath)
                     }
                 } else {
                     knownFiles[filePath] = modificationDate
-                    await hotfolder.createSubject.send(filePath)
+                    hotfolder.createSubject.send(filePath)
                 }
             }
         }
@@ -203,7 +204,7 @@ public final actor HotfolderWatcher: GlobalActor {
         for filePath in knownFiles.keys {
             if !currentFiles.contains(filePath) {
                 knownFiles.removeValue(forKey: filePath)
-                await hotfolder.deleteSubject.send(filePath)
+                hotfolder.deleteSubject.send(filePath)
             }
         }
     }
