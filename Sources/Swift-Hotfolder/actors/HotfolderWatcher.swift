@@ -12,24 +12,37 @@ import os.log
 @globalActor
 public final actor HotfolderWatcher: GlobalActor {
     private let fileManager: FileManager
-    private(set) var watcherConfig: WatcherConfig
-    private var runTime: Date?
-
-    private(set) var hotfolders: Set<Hotfolder>
-    private(set) var knownFiles: [Hotfolder: [URL: Date]]
+    private var hotfolders: Set<Hotfolder>
+    private var knownFiles: [Hotfolder: [URL: Date]]
     private var runLoopTask: Task<Void, Error>?
+    
+    /// The WatcherConfiguration which will be used by the HotfolderWatcher.
+    /// - Since: 1.0.0
+    private(set) var watcherConfig: WatcherConfig
 
+    /// Tells you if the HotfolderWatcher currently watching for changes.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     private(set) var isRunning: Bool {
         didSet(watcherStarted) {
             runTime = watcherStarted ? Date.now : nil
             isRunning = watcherStarted
         }
     }
+    
+    /// The time where the HotfolderWatcher begins to start or nil.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
+    private(set) var runTime: Date?
 
+    /// The count of the currently added Hotfolders.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     public var count: Int {
         hotfolders.count
     }
 
+    @available(macOS, introduced: 14)
     public static let shared = HotfolderWatcher()
 
     private init() {
@@ -39,7 +52,12 @@ public final actor HotfolderWatcher: GlobalActor {
         hotfolders = []
         knownFiles = [:]
     }
-
+    
+    /// Set up the HotfolderWatcher with your own WatcherConfg
+    /// - Parameter watcherConfig: The new WatcherConfg where will be used to config the HotfolderWatcher.
+    /// - Throws: a `hotfolderWatcherCurrentlyRun`Error if the HotfolderWatcher are currently observes the Hotfolders.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     public func setup(_ watcherConfig: WatcherConfig) throws {
         guard !isRunning else {
             throw HotfolderWatcherError.hotfolderWatcherCurrentlyRun("""
@@ -54,7 +72,11 @@ public final actor HotfolderWatcher: GlobalActor {
         subsystem: Bundle.main.bundleIdentifier ?? "hotfolder_logger",
         category: String(describing: HotfolderWatcher.self)
     )
-
+    
+    ///  Stops the  HotfolderWatcher to watch the Hotfolders
+    /// - Returns: false if the HotfolderWatcher already don#t monitore the Hotfolders or true if it stopps.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     @discardableResult
     public final func stop() -> Bool {
         guard isRunning else {
@@ -71,6 +93,12 @@ public final actor HotfolderWatcher: GlobalActor {
         return true
     }
 
+    /// Starts the observing processes
+    /// - The observe interval are depending on the `watchInterval` in your WatcherConfig (default = 1 time per second)
+    /// - Returns: you true if the watcher are running, else false
+    /// - Throws: an error if something unexpected happends if Watcher watchs the Hotfolder(s).
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     @discardableResult
     public final func startWatching() async throws -> Bool {
         guard !hotfolders.isEmpty else {
@@ -102,6 +130,11 @@ public final actor HotfolderWatcher: GlobalActor {
         return isRunning
     }
 
+    /// Append a Hotfolder to the monitored Hotfolders
+    /// - If the `create_non_existing_folders` in your WatcherConfig are **true** (default) the Hotfolder will be created if it not exists.
+    /// - Returns: you a **Result** of the success or an error if the Hotfolder can't be created.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     @discardableResult
     public final func add(_ hotfolder: Hotfolder) -> Result<Bool, Error> {
         guard hotfolders.count < watcherConfig.maxHotfolderCount else {
@@ -123,6 +156,10 @@ public final actor HotfolderWatcher: GlobalActor {
         return .success(inserted)
     }
 
+    /// Removed the given Hotfolder from the HotfolderWatcher
+    /// - Returns: **true** if the Hotfolder are removed successfuly else **false**.
+    /// - Since: 1.0.0
+    @available(macOS, introduced: 14)
     @discardableResult
     public final func remove(_ hotfolder: Hotfolder) -> Bool {
         guard let droppedHotfolder = hotfolders.remove(hotfolder) else {
