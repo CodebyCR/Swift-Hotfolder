@@ -21,6 +21,7 @@ public struct WatcherConfig: Codable {
     }
 
     /// For the **safe** default one.
+    /// - Since: 1.0.0
     private init() {
         self.createNonExistingFolders = true
         self.watchInterval = 1.0
@@ -31,6 +32,7 @@ public struct WatcherConfig: Codable {
     public static let `default` = WatcherConfig()
 
     /// For maybe **unsafe** WatcherConfig created be the user of the framework.
+    ///  - Since: 1.0.0
     public init?(createNonExistingFolders: Bool = true, watchInterval: Double = 1.0, maxHotfolderCount: UInt16 = 5, enumerationOptions: FileManager.DirectoryEnumerationOptions = []) throws {
         let minWatcherInterval = 0.1
         guard watchInterval >= minWatcherInterval else {
@@ -48,6 +50,7 @@ public struct WatcherConfig: Codable {
     }
 
     /// Custom initializer to decode from any Decoder
+    ///  - Since: 1.0.0
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.createNonExistingFolders = try container.decode(Bool.self, forKey: .createNonExistingFolders)
@@ -60,6 +63,7 @@ public struct WatcherConfig: Codable {
     }
 
     /// Try to read the given path to a config json file or return the 'default' WatcherConfig.
+    ///  - Since: 1.0.0
     public static func load(from configJsonPath: String = "") -> Result<WatcherConfig, WatcherConfigError> {
         guard !configJsonPath.isEmpty else {
             print("Info: No 'configJsonPath' given. Using default configuration.")
