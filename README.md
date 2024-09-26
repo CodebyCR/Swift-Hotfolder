@@ -11,12 +11,6 @@
     </h6>
 </div>
 
-<br/>
-
-> [!IMPORTANT]
-> This Swift package is currently in an early state and not ready to use.<br/>
-> This will change when v.1.0.0 is released.
-
 ### \#ConstributersWelcome❤️
 
 > [!NOTE]
